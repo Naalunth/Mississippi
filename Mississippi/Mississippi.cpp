@@ -26,6 +26,16 @@ string GetFileContent(char* filename)
 }
 
 
+void PrintFancy(map<string, int> in)
+{
+	wprintf(L"              string | number of occurences\n---------------------+---------------------\n");
+	for (auto it = in.begin(); it != in.end(); it++)
+	{
+		wprintf(L"%20hs | %3i\n", it->first.c_str(), it->second);
+	}
+	wprintf(L"\n");
+}
+
 
 int main(int argc, char** argv)
 {
@@ -34,14 +44,9 @@ int main(int argc, char** argv)
 	string inString = GetFileContent("chrM.fa");
 
 	StringFinder* sf = new StringFinderBruteForce();
-	auto result = sf->GetAllSubStrings(inString, 2, 2);
+	auto result = sf->GetAllSubStrings("CAGGAGGATTA", 1, 2);
 
-	wprintf(L"string \t\tnumber of occurences\n");
-
-	for (auto it = result.begin(); it != result.end(); it++)
-	{
-		wprintf(L"%s \t\t%i\n", it->first, it->second);
-	}
+	PrintFancy(result);
 
 
 	wprintf(L"\n\nPress Enter...");
