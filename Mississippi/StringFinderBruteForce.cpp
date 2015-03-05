@@ -13,9 +13,9 @@ StringFinderBruteForce::~StringFinderBruteForce()
 }
 
 
-map<string, int> StringFinderBruteForce::GetAllSubStrings(string in, int l, int k)
+map<string, int> StringFinderBruteForce::GetAllSubStrings(int l, int k)
 {
-	unsigned int len = in.length();
+	unsigned int len = text_->length();
 	map<string, int> result;
 	for (int i = len - 1; i >= l; i--)
 	{
@@ -24,7 +24,7 @@ map<string, int> StringFinderBruteForce::GetAllSubStrings(string in, int l, int 
 		for (int j = 0; j < len - i + 1; j++)
 		{
 			string buffer;
-			buffer = in.substr(j, i);
+			buffer = text_->substr(j, i);
 			if (countOfSubstring.end() == countOfSubstring.find(buffer))
 			{
 				countOfSubstring[buffer] = 0;

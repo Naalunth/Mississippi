@@ -13,10 +13,15 @@ typedef unsigned int  uint;
 
 
 
-string GetFileContent(char* filename)
+string GetFileContent(const char* filename)
 {
 	string contents;
 	ifstream file(filename, ios::in | ios::binary);
+	if (!file.is_open())
+	{
+		wprintf(L"Wasn't able to open %hs, i'm sorry. :(\n", filename);
+		return 0;
+	}
 	file.seekg(0, ios::end);
 	contents.resize(file.tellg());
 	file.seekg(0, ios::beg);
@@ -41,12 +46,25 @@ int main(int argc, char** argv)
 {
 	_setmode(_fileno(stdout), _O_U16TEXT);
 
-	string inString = GetFileContent("chrM.fa");
+	for (;;)
+	{
+		wprintf(L"Enter filename: ");
+		string filename = "";
+		getline(cin, filename);
+		if (filename == "")
+		{
+			filename = "chrM.fa";
+		}
+		string* inString = new string(GetFileContent(filename.c_str()));
 
-	StringFinder* sf = new StringFinderBruteForce();
-	auto result = sf->GetAllSubStrings("CAGGAGGATTA", 1, 2);
+		StringFinder* sf = new StringFinderBruteForce();
+        sf->SetString(inString);
+        auto result1 = sf->GetAllSubStrings(6, 2);
+        auto result2 = sf->GetAllSubStrings(10, 2);
 
-	PrintFancy(result);
+        PrintFancy(result1);
+        PrintFancy(result2);
+	}
 
 
 	wprintf(L"\n\nPress Enter...");
