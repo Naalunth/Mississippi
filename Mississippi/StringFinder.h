@@ -6,15 +6,18 @@ using namespace std;
 class StringFinder
 {
 public:
-    //Change the text associated with this StringFinder
-    void SetString(string* inputSequence)
-    {
-        text_ = inputSequence;
-    }
+	//Change the text associated with this StringFinder
+	void SetString(wstring* inputSequence)
+	{
+		text_ = inputSequence;
+		OnStringChange(inputSequence);
+	}
 
-    //Returns all Substrings matching the specifications
-    virtual map<string, int> GetAllSubStrings(int minLength = 1, int minAmount = 2) = 0;
+	//Returns all Substrings matching the specifications
+	virtual map<wstring, int> GetAllSubStrings(int minLength = 1, int minAmount = 2) = 0;
 	virtual ~StringFinder() {};
+
 protected:
-    string* text_;
+	virtual void OnStringChange(wstring* in) = 0;
+	wstring* text_;
 };

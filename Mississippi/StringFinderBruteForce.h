@@ -5,7 +5,7 @@ class StringFinderBruteForce :
 {
 public:
 	StringFinderBruteForce();
-    ~StringFinderBruteForce();
-	map<string, int> GetAllSubStrings(int l = 1, int k = 2);
+	~StringFinderBruteForce();
+	map<wstring, int> GetAllSubStrings(int l = 1, int k = 2);
 };
 

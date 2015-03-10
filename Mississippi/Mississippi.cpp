@@ -6,6 +6,7 @@
 #include <fcntl.h>
 #include "StringFinder.h"
 #include "StringFinderBruteForce.h"
+#include "StringFinderSuffixTree.h"
 
 using namespace std;
 
@@ -13,14 +14,14 @@ typedef unsigned int  uint;
 
 
 
-string GetFileContent(const char* filename)
+wstring GetFileContent(const wchar_t* filename)
 {
-	string contents;
-	ifstream file(filename, ios::in | ios::binary);
+	wstring contents;
+	wifstream file(filename, ios::in | ios::binary);
 	if (!file.is_open())
 	{
 		wprintf(L"Wasn't able to open %hs, i'm sorry. :(\n", filename);
-		return 0;
+		return wstring(filename);
 	}
 	file.seekg(0, ios::end);
 	contents.resize(file.tellg());
@@ -31,7 +32,7 @@ string GetFileContent(const char* filename)
 }
 
 
-void PrintFancy(map<string, int> in)
+void PrintFancy(map<wstring, int> in)
 {
 	wprintf(L"              string | number of occurences\n---------------------+---------------------\n");
 	for (auto it = in.begin(); it != in.end(); it++)
@@ -49,21 +50,21 @@ int main(int argc, char** argv)
 	for (;;)
 	{
 		wprintf(L"Enter filename: ");
-		string filename = "";
-		getline(cin, filename);
-		if (filename == "")
+		wstring filename = L"";
+		getline(wcin, filename);
+		if (filename == L"")
 		{
-			filename = "chrM.fa";
+			filename = L"chrM.fa";
 		}
-		string* inString = new string(GetFileContent(filename.c_str()));
+		wstring* inString = new wstring(GetFileContent(filename.data()));
 
-		StringFinder* sf = new StringFinderBruteForce();
-        sf->SetString(inString);
-        auto result1 = sf->GetAllSubStrings(6, 2);
-        auto result2 = sf->GetAllSubStrings(10, 2);
+		StringFinder* sf = new StringFinderSuffixTree();
+		sf->SetString(inString);
+		auto result1 = sf->GetAllSubStrings(6, 2);
+		auto result2 = sf->GetAllSubStrings(10, 2);
 
-        PrintFancy(result1);
-        PrintFancy(result2);
+		PrintFancy(result1);
+		PrintFancy(result2);
 	}
 
 
