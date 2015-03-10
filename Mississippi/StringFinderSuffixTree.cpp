@@ -175,7 +175,6 @@ void SuffixTree::BuildTree()
 					activePoint.node->AddChild(nc);
 
 					AddSuffixLink(activePoint.node);
-
 				}
 				else
 				{
@@ -191,9 +190,7 @@ void SuffixTree::BuildTree()
 					newinternal->child = activeNodePointer;
 					activeNodePointer->sibling = newchild;
 
-
 					activeNodePointer->begin = activeNodePointer->begin + activePoint.length;
-
 
 					AddSuffixLink(newinternal);
 				}
