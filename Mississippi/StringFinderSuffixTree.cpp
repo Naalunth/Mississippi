@@ -1,7 +1,7 @@
 #include "StringFinderSuffixTree.h"
 #include <stack>
 #include <assert.h>
-
+#include <cmath>
 
 
 
@@ -12,15 +12,9 @@ SuffixTreeNode::~SuffixTreeNode()
 	if (child) delete child;
 }
 
-/*
-int SuffixTreeNode::CalculateLimitations(int len, SuffixTree* tree)
-{
-	labellength = ((isRoot) ? (0) : (len + ((end == END_MARKER) ? (tree->text->length() - 1) : end) - begin + 1));
-	leafnumber = (child ? (child->CalculateLimitations(labellength, tree)) : 1);
-	return (child ? (child->CalculateLimitations(labellength, tree)) : 1)
-		+ (sibling ? (sibling->CalculateLimitations(len, tree)) : 0);
+int SuffixTreeNode::EdgeLength(SuffixTree* tree) {
+	return ((end == END_MARKER) ? (tree->text->length() - 1) : (end + 1)) - begin;
 }
-*/
 
 
 void SuffixTreeNode::AddChild(SuffixTreeNode* newChild)
@@ -59,10 +53,16 @@ void SuffixTreeNode::Draw(int indent, SuffixTree* tree, int endpos)
 		wstring ind;
 		int x = indent;
 		while (x--) ind.append(L"    ");
+		/*
 		wprintf(L"%sBegin:%i End:%s\n%s[%s]\n%sLeaves below:%i  Prefix length:%i\n\n",
 			ind.data(), begin, end == END_MARKER ? L"#" : to_wstring(end).data(),
 			ind.data(), tree->text->substr(begin, ((end == END_MARKER) ? endpos : end) - begin + 1).data(),
 			ind.data(), leafnumber, labellength);
+		/*/
+		wprintf(L"%sBegin:%i End:%s\n%sLeaves below:%i  Prefix length:%i\n\n",
+			ind.data(), begin, end == END_MARKER ? L"#" : to_wstring(end).data(),
+			ind.data(), nLeaves, labellength);
+		//*/
 		if (child) child->Draw(indent + 1, tree, endpos);
 		if (sibling) sibling->Draw(indent, tree, endpos);
 	}
@@ -73,12 +73,9 @@ void SuffixTreeNode::Draw(int indent, SuffixTree* tree, int endpos)
 }
 
 
-SuffixTree::SuffixTree(wstring& in)
+SuffixTree::SuffixTree(string* in)
 {
-	text = new wstring();
-	text->reserve(in.length() + 1);
-	text->assign(in);
-	text->append(L"$");
+	text = in;
 	BuildTree();
 }
 
@@ -92,7 +89,7 @@ SuffixTree::~SuffixTree()
 
 
 //Giant monolithic function for building a suffix tree
-// Based on "On-line construction of suffix trees" (Ukkonen, 1995)
+// Based on "On-line construction of suffix trees" (E. Ukkonen, 1995)
 void SuffixTree::BuildTree()
 {
 	struct ActivePoint
@@ -112,6 +109,7 @@ void SuffixTree::BuildTree()
 	activePoint.node = root;
 
 	int currentLetter;
+	int i;
 
 	auto WalkDown = [&](){
 		//Walk down the tree in case the new point's label is too short
@@ -124,38 +122,50 @@ void SuffixTree::BuildTree()
 			ofs += activeNodePointer->end - activeNodePointer->begin + 1;
 			activePoint = {
 				activeNodePointer,
-				text->at(currentLetter + ofs + 1),
+				//text->at(currentLetter + ofs + 1),
+				text->at(i - activePoint.length + (activeNodePointer->end - activeNodePointer->begin) + 1),
 				activePoint.length - (activeNodePointer->end - activeNodePointer->begin + 1)
 			};
 		}
 	};
 
 	auto ResetActivePoint = [&](){
-		activePoint = (activePoint.node == root) ? ActivePoint{ root, text->at(currentLetter + 1 < text->length() ? currentLetter + 1 : 0), activePoint.length - 1 >= 0 ? activePoint.length - 1 : 0 }
-		: ActivePoint{ activePoint.node->suffixlink ? activePoint.node->suffixlink : root, activePoint.edge, activePoint.length };
+		activePoint = (activePoint.node == root) ?
+			ActivePoint{ 
+				root,
+				text->at((activePoint.length > 0) ? ((currentLetter + 1 < text->length()) ? currentLetter + 1 : 0) : '\0' ),
+				activePoint.length > 0 ? activePoint.length - 1 : 0 }
+			: 
+			ActivePoint{ 
+				activePoint.node->suffixlink ? activePoint.node->suffixlink : root,
+				activePoint.edge,
+				activePoint.length };
 		WalkDown();
 	};
 
 	auto AddSuffixLink = [&](SuffixTreeNode* linkTo){
-		if (lastInsertedNode && lastInsertedNode != linkTo)
+		if (lastInsertedNode)
 			lastInsertedNode->suffixlink = linkTo;
-		if ((!linkTo->isRoot) && linkTo->child)
-			lastInsertedNode = linkTo;
+		lastInsertedNode = linkTo;
 	};
 
-	for (int i = 0; i < text->length(); i++)
+	for (i = 0; i < text->length(); i++)
 	{
+		if (!(i % (text->length() / 1000))) wprintf(L"At step %.*i (%3.0f%%)\n", (int) log10((float) text->length()) + 1, i, (float) i / (float) text->length()*100.f);
+		//if (!(i % (text->length() / 1000))) wprintf(L"At step %i\n", i);
 		remainder++;
 		for (currentLetter = i - remainder + 1; currentLetter <= i; currentLetter++)
 		{
-			wprintf(L"\nStep:%i current letter:%i(%c)\n", i, currentLetter, text->at(currentLetter));
+			//wprintf(L"\nStep:%i current letter:%i(%c)\n", i, currentLetter, text->at(currentLetter));
+			if (activePoint.length == 0)
+				activePoint.edge = text->at(i);
 			activeNodePointer = activePoint.node->GetChild(activePoint.edge, this);
 			assert(activePoint.node->end != END_MARKER);
 			if (activeNodePointer && (text->at(activeNodePointer->begin + activePoint.length) == text->at(i)))
 			//if the current character matches the text
 			{
 				//just change the active point and skip to the next step
-				activePoint.edge = text->at(currentLetter);
+				activePoint.edge = text->at(activeNodePointer->begin);
 				activePoint.length++;
 
 				AddSuffixLink(activePoint.node);
@@ -165,7 +175,7 @@ void SuffixTree::BuildTree()
 			}
 			else
 			{
-				if (!activeNodePointer || activePoint.length == 0)
+				if (activePoint.length == 0)
 				{
 
 					//insert new child
@@ -201,34 +211,91 @@ void SuffixTree::BuildTree()
 			//root->Draw(1, this, i);
 		}
 		lastInsertedNode = 0;
+		activeNodePointer = 0;
 	}
 	CalculateLimitations();
-	root->Draw(1, this);
+	//root->Draw(1, this);
+	fflush(stdout);
 }
 
 
 void SuffixTree::CalculateLimitations()
 {
-	//if (root) root->CalculateLimitations(0, this);
+	stack<SuffixTreeNode*> traversalStack;
+	traversalStack.push(root);
+
+	{
+		int leafCountReturn = 0;
+		int labelAccumulator = 0;
+		SuffixTreeNode* currentNode = traversalStack.top();
+	newNodeInsertion:
+		currentNode->labellength = labelAccumulator + currentNode->EdgeLength(this);
+		labelAccumulator = currentNode->labellength;
+		if (currentNode->child)
+		{
+			traversalStack.push(currentNode->child);
+			currentNode = currentNode->child;
+			goto newNodeInsertion;
+		}
+		else
+			leafCountReturn = 1;
+
+	returnFromSomething:
+	returnFromChild:
+		if (currentNode->nLeaves) goto returnFromSibling;
+		currentNode->nLeaves = leafCountReturn;
+		labelAccumulator -= currentNode->EdgeLength(this);
+		if (currentNode->sibling)
+		{
+			traversalStack.push(currentNode->sibling);
+			currentNode = currentNode->sibling;
+			goto newNodeInsertion;
+		}
+		else
+			leafCountReturn = 0;
+
+	returnFromSibling:
+		leafCountReturn += currentNode->nLeaves;
+		traversalStack.pop();
+		if (traversalStack.empty()) goto endTraversal;
+		currentNode = traversalStack.top();
+		goto returnFromSomething;
+	}
+
+
+endTraversal:
+	return;
 }
 
 
-map<wstring, int> SuffixTree::GetAllSubStrings(int minLength, int minAmount)
+map<string, int> SuffixTree::GetAllSubStrings(int minLength, int minAmount)
 {
-	if (!root) return map<wstring, int>();
-	map<wstring, int> res;
-	SuffixTreeNode* ptr;
-	stack<SuffixTreeNode*> dftStack;
-	wstring accumulatedSubstring = L"";
-	dftStack.push(root);
-	while (!dftStack.empty())
+	map<string, int> res;
+	if (!root) return res;
+	struct tmpSearchStruct
 	{
-		ptr = dftStack.top();
-		dftStack.pop();
+	public:
+		SuffixTreeNode* node;
+		bool calledSibling;
+	};
+	stack<tmpSearchStruct> traversalStack;
+	traversalStack.push(tmpSearchStruct{ root, false });
 
-		if (ptr->sibling) dftStack.push(ptr->sibling);
-		if (ptr->child) dftStack.push(ptr->child);
+	{
+		tmpSearchStruct currentNode;
+		string labelAccumulator;
+		auto GetNodeLabelLength = [&](SuffixTreeNode* stn){return (stn->end == END_MARKER ? text->length() - 2 : stn->end) - stn->begin + 1; };
+		beginloop:
+		currentNode = traversalStack.top();
+		labelAccumulator += text->substr(currentNode.node->begin, GetNodeLabelLength(currentNode.node));
+		if (currentNode.node->nLeaves >= minAmount && currentNode.node->labellength >= minLength)
+		{
+			res[labelAccumulator] = currentNode.node->nLeaves;
+		}
 	}
+
+
+endTraversal:
 	return res;
 }
 
@@ -244,14 +311,14 @@ StringFinderSuffixTree::~StringFinderSuffixTree()
 
 
 
-map<wstring, int> StringFinderSuffixTree::GetAllSubStrings(int minLength, int minAmount)
+map<string, int> StringFinderSuffixTree::GetAllSubStrings(int minLength, int minAmount)
 {
 	return suffixTree_->GetAllSubStrings(minLength, minAmount);
 }
 
 
-void StringFinderSuffixTree::OnStringChange(wstring* in)
+void StringFinderSuffixTree::OnStringChange(string* in)
 {
 	if (suffixTree_) delete suffixTree_;
-	suffixTree_ = new SuffixTree(*in);
+	suffixTree_ = new SuffixTree(in);
 }

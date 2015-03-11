@@ -7,17 +7,17 @@ class StringFinder
 {
 public:
 	//Change the text associated with this StringFinder
-	void SetString(wstring* inputSequence)
+	void SetString(string* inputSequence)
 	{
 		text_ = inputSequence;
 		OnStringChange(inputSequence);
 	}
 
 	//Returns all Substrings matching the specifications
-	virtual map<wstring, int> GetAllSubStrings(int minLength = 1, int minAmount = 2) = 0;
+	virtual map<string, int> GetAllSubStrings(int minLength = 1, int minAmount = 2) = 0;
 	virtual ~StringFinder() {};
 
 protected:
-	virtual void OnStringChange(wstring* in) = 0;
-	wstring* text_;
+	virtual void OnStringChange(string* in) = 0;
+	string* text_;
 };

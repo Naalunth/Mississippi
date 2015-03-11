@@ -21,11 +21,12 @@ public:
 	//int leafoffset;
 
 	int labellength = 0;
-	int leafnumber = 0;
+	int nLeaves = 0;
 
 
 	~SuffixTreeNode();
 
+	int EdgeLength(SuffixTree*);
 
 	void AddChild(SuffixTreeNode*);
 	void ReplaceChild(char label, SuffixTreeNode*, SuffixTree*);
@@ -39,16 +40,16 @@ public:
 struct SuffixTree
 {
 	SuffixTreeNode* root = 0;
-	std::wstring* text = 0;
+	std::string* text = 0;
 
-	SuffixTree(std::wstring&);
+	SuffixTree(std::string*);
 	~SuffixTree();
 
 	//Calculates labellength and leafnumber for every node
 	void CalculateLimitations();
 
 	//Extracts all Substrings matching the specifications
-	map<wstring, int> GetAllSubStrings(int minLength, int minAmount);
+	map<string, int> GetAllSubStrings(int minLength, int minAmount);
 
 private:
 	void BuildTree();
@@ -62,9 +63,9 @@ class StringFinderSuffixTree :
 public:
 	StringFinderSuffixTree();
 	~StringFinderSuffixTree();
-	map<wstring, int> GetAllSubStrings(int l = 1, int k = 2);
+	map<string, int> GetAllSubStrings(int l = 1, int k = 2);
 protected:
-	void OnStringChange(wstring* in);
+	void OnStringChange(string* in);
 private:
 	SuffixTree* suffixTree_ = 0;
 };

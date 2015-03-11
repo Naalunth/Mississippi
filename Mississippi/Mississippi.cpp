@@ -1,3 +1,4 @@
+#include <Windows.h>
 #include <stdio.h>
 #include <utility>
 #include <iostream>
@@ -7,6 +8,7 @@
 #include "StringFinder.h"
 #include "StringFinderBruteForce.h"
 #include "StringFinderSuffixTree.h"
+#include "Utility.h"
 
 using namespace std;
 
@@ -14,14 +16,17 @@ typedef unsigned int  uint;
 
 
 
-wstring GetFileContent(const wchar_t* filename)
+
+
+
+string GetFileContent(const wchar_t* filename)
 {
-	wstring contents;
-	wifstream file(filename, ios::in | ios::binary);
+	string contents;
+	ifstream file(filename, ios::in | ios::binary);
 	if (!file.is_open())
 	{
-		wprintf(L"Wasn't able to open %hs, i'm sorry. :(\n", filename);
-		return wstring(filename);
+		wprintf(L"Wasn't able to open %s, i'm sorry. :(\n", filename);
+		return Util::wstrtostr(filename);
 	}
 	file.seekg(0, ios::end);
 	contents.resize(file.tellg());
@@ -32,7 +37,7 @@ wstring GetFileContent(const wchar_t* filename)
 }
 
 
-void PrintFancy(map<wstring, int> in)
+void PrintFancy(map<string, int> in)
 {
 	wprintf(L"              string | number of occurences\n---------------------+---------------------\n");
 	for (auto it = in.begin(); it != in.end(); it++)
@@ -43,9 +48,13 @@ void PrintFancy(map<wstring, int> in)
 }
 
 
-int main(int argc, char** argv)
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
+	AllocConsole();
 	_setmode(_fileno(stdout), _O_U16TEXT);
+	freopen("CON", "w", stdout);
+	freopen("CON", "w", stderr);
+	freopen("CON", "r", stdin);
 
 	for (;;)
 	{
@@ -56,7 +65,7 @@ int main(int argc, char** argv)
 		{
 			filename = L"chrM.fa";
 		}
-		wstring* inString = new wstring(GetFileContent(filename.data()));
+		string* inString = new string(GetFileContent(filename.data()));
 
 		StringFinder* sf = new StringFinderSuffixTree();
 		sf->SetString(inString);
@@ -68,7 +77,7 @@ int main(int argc, char** argv)
 	}
 
 
-	wprintf(L"\n\nPress Enter...");
+	wprintf(L"\n\nPress any key...");
 	wcin.ignore();
 	return 0;
 }
