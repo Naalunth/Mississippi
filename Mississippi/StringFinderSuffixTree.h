@@ -7,6 +7,7 @@ static const int END_MARKER = INT_MAX;
 
 struct SuffixTree;
 
+typedef unsigned char uint8;
 
 //Suffix Tree Node
 struct SuffixTreeNode
@@ -14,16 +15,12 @@ struct SuffixTreeNode
 public:
 	int begin = 0;
 	int end = 0;
-	bool isRoot = false;
+	uint8 isRoot : 1, didGoToSibling : 1;
 	SuffixTreeNode* child = 0;
 	SuffixTreeNode* sibling = 0;
 	SuffixTreeNode* suffixlink = 0;
-	//int leafoffset;
 
-	int labellength = 0;
-	int nLeaves = 0;
-
-
+	SuffixTreeNode();
 	~SuffixTreeNode();
 
 	int EdgeLength(SuffixTree*);

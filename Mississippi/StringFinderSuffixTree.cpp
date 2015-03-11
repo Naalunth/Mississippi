@@ -5,6 +5,10 @@
 
 
 
+SuffixTreeNode::SuffixTreeNode() : 
+isRoot(0),
+didGoToSibling(0){}
+
 
 SuffixTreeNode::~SuffixTreeNode()
 {
@@ -59,9 +63,8 @@ void SuffixTreeNode::Draw(int indent, SuffixTree* tree, int endpos)
 			ind.data(), tree->text->substr(begin, ((end == END_MARKER) ? endpos : end) - begin + 1).data(),
 			ind.data(), leafnumber, labellength);
 		/*/
-		wprintf(L"%sBegin:%i End:%s\n%sLeaves below:%i  Prefix length:%i\n\n",
-			ind.data(), begin, end == END_MARKER ? L"#" : to_wstring(end).data(),
-			ind.data(), nLeaves, labellength);
+		wprintf(L"%sBegin:%i End:%s\n\n",
+			ind.data(), begin, end == END_MARKER ? L"#" : to_wstring(end).data());
 		//*/
 		if (child) child->Draw(indent + 1, tree, endpos);
 		if (sibling) sibling->Draw(indent, tree, endpos);
@@ -213,58 +216,8 @@ void SuffixTree::BuildTree()
 		lastInsertedNode = 0;
 		activeNodePointer = 0;
 	}
-	CalculateLimitations();
 	//root->Draw(1, this);
 	fflush(stdout);
-}
-
-
-void SuffixTree::CalculateLimitations()
-{
-	stack<SuffixTreeNode*> traversalStack;
-	traversalStack.push(root);
-
-	{
-		int leafCountReturn = 0;
-		int labelAccumulator = 0;
-		SuffixTreeNode* currentNode = traversalStack.top();
-	newNodeInsertion:
-		currentNode->labellength = labelAccumulator + currentNode->EdgeLength(this);
-		labelAccumulator = currentNode->labellength;
-		if (currentNode->child)
-		{
-			traversalStack.push(currentNode->child);
-			currentNode = currentNode->child;
-			goto newNodeInsertion;
-		}
-		else
-			leafCountReturn = 1;
-
-	returnFromSomething:
-	returnFromChild:
-		if (currentNode->nLeaves) goto returnFromSibling;
-		currentNode->nLeaves = leafCountReturn;
-		labelAccumulator -= currentNode->EdgeLength(this);
-		if (currentNode->sibling)
-		{
-			traversalStack.push(currentNode->sibling);
-			currentNode = currentNode->sibling;
-			goto newNodeInsertion;
-		}
-		else
-			leafCountReturn = 0;
-
-	returnFromSibling:
-		leafCountReturn += currentNode->nLeaves;
-		traversalStack.pop();
-		if (traversalStack.empty()) goto endTraversal;
-		currentNode = traversalStack.top();
-		goto returnFromSomething;
-	}
-
-
-endTraversal:
-	return;
 }
 
 
@@ -272,27 +225,61 @@ map<string, int> SuffixTree::GetAllSubStrings(int minLength, int minAmount)
 {
 	map<string, int> res;
 	if (!root) return res;
-	struct tmpSearchStruct
-	{
-	public:
-		SuffixTreeNode* node;
-		bool calledSibling;
-	};
-	stack<tmpSearchStruct> traversalStack;
-	traversalStack.push(tmpSearchStruct{ root, false });
+	stack<SuffixTreeNode*> traversalStack;
+	stack<int> leafNumberStack;
+	traversalStack.push(root);
+	leafNumberStack.push(0);
+	
 
+	int leafCountReturn = 0;
+	int labelAccumulator = 0;
+	string prefixAccumulator = "";
+	SuffixTreeNode* currentNode = traversalStack.top();
+
+
+newNodeInsertion:
+	labelAccumulator = labelAccumulator + currentNode->EdgeLength(this);
+	if (!currentNode->isRoot) prefixAccumulator.append(text->substr(currentNode->begin, currentNode->EdgeLength(this)));
+	currentNode->didGoToSibling = 0;
+	if (currentNode->child)
 	{
-		tmpSearchStruct currentNode;
-		string labelAccumulator;
-		auto GetNodeLabelLength = [&](SuffixTreeNode* stn){return (stn->end == END_MARKER ? text->length() - 2 : stn->end) - stn->begin + 1; };
-		beginloop:
-		currentNode = traversalStack.top();
-		labelAccumulator += text->substr(currentNode.node->begin, GetNodeLabelLength(currentNode.node));
-		if (currentNode.node->nLeaves >= minAmount && currentNode.node->labellength >= minLength)
-		{
-			res[labelAccumulator] = currentNode.node->nLeaves;
-		}
+		traversalStack.push(currentNode->child);
+		currentNode = currentNode->child;
+		goto newNodeInsertion;
 	}
+	else
+		leafCountReturn = 1;
+
+returnFromSomething:
+returnFromChild:
+	if (currentNode->didGoToSibling) { goto returnFromSibling; }
+
+	leafNumberStack.push(leafCountReturn);
+
+	//add this node to the result if it suffices the parameters
+	if (leafCountReturn >= minAmount && labelAccumulator >= minLength)
+		res[prefixAccumulator] = leafCountReturn;
+
+	labelAccumulator -= currentNode->EdgeLength(this);
+	if (!currentNode->isRoot) prefixAccumulator.resize(prefixAccumulator.size() - currentNode->EdgeLength(this));
+	currentNode->didGoToSibling = 1;
+	if (currentNode->sibling)
+	{
+		traversalStack.push(currentNode->sibling);
+		currentNode = currentNode->sibling;
+		goto newNodeInsertion;
+	}
+	else
+		leafCountReturn = 0;
+
+returnFromSibling:
+	traversalStack.pop();
+	if (traversalStack.empty()) goto endTraversal;
+	leafCountReturn += leafNumberStack.top();
+	leafNumberStack.pop();
+	currentNode = traversalStack.top();
+	goto returnFromSomething;
+
 
 
 endTraversal:
