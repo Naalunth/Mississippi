@@ -5,6 +5,10 @@
 #include <fstream>
 #include <io.h>
 #include <fcntl.h>
+#include <list>
+#include <vector>
+#include <algorithm>
+
 #include "StringFinder.h"
 #include "StringFinderBruteForce.h"
 #include "StringFinderSuffixTree.h"
@@ -39,7 +43,7 @@ int GetFileContentWithTerminal(const wchar_t* filename, string** out)
 }
 
 
-void PrintFancy(map<string, int> in)
+void PrintFancy(const map<string, int>& in)
 {
 	wprintf(L"              string | number of occurences\n---------------------+---------------------\n");
 	for (auto it = in.begin(); it != in.end(); it++)
@@ -47,6 +51,59 @@ void PrintFancy(map<string, int> in)
 		wprintf(L"%20hs | %3i\n", it->first.c_str(), it->second);
 	}
 	wprintf(L"\n");
+}
+
+
+bool CompareStringsBackwards(const string& a, const string& b)
+{
+	//returns a < b
+	auto aIt = a.rbegin();
+	auto bIt = b.rbegin();
+	for (;;)
+	{
+		if (aIt == a.rend()) return true;
+		if (bIt == b.rend()) return false;
+		if ((*aIt) < (*bIt)) return true;
+		if ((*aIt) > (*bIt)) return false;
+		aIt++;
+		bIt++;
+	}
+}
+
+
+void FilterMaximalResults(map<string, int>& in)
+{
+	vector<string> substrings;
+	substrings.reserve(in.size());
+
+	for (auto it = in.begin(); it != in.end(); it++)
+		substrings.push_back(it->first);
+
+	sort(substrings.begin(), substrings.end(), CompareStringsBackwards);
+
+	for (int i = 0; i <= substrings.size() - 2; i++)
+	{
+		if (in[substrings[i]] == in[substrings[i + 1]])
+		{
+			string a = substrings[i], b = substrings[i + 1];
+			auto aIt = a.rbegin();
+			auto bIt = b.rbegin();
+			for (;;)
+			{
+				if (aIt == a.rend())
+				{
+					in.erase(a);
+					break;
+				}
+				if (bIt == b.rend()) break;
+				if ((*aIt) < (*bIt)) break;
+				if ((*aIt) > (*bIt)) break;
+				aIt++;
+				bIt++;
+			}
+		}
+	}
+
 }
 
 
@@ -58,8 +115,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	freopen("CON", "w", stderr);
 	freopen("CON", "r", stdin);
 
-	wstring inputbuffer = L"";
 	map<string, int> tmpres;
+	wstring inputbuffer = L"";
 
 	string* textInput;
 
@@ -83,6 +140,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		case 2:
 			wprintf(L"Enter string: ");
 			getline(wcin, inputbuffer);
+			textInput = new string;
 			textInput->assign(Util::wstrtostr(inputbuffer));
 			textInput->append("$");
 			break;
@@ -114,12 +172,14 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 				wprintf(L"Minimum amount: ");
 				getline(wcin, inputbuffer);
 				k = stoi(inputbuffer);
+				wprintf(L"\nPlease wait...\n\n");
 				tmpres = sf->GetAllSubStrings(l, k);
+				FilterMaximalResults(tmpres);
 				PrintFancy(tmpres);
+				tmpres = map<string,int>();
 				break;
 			case 2:
 				delete sf;
-				if (textInput) delete textInput;
 				goto restart;
 				break;
 			default:

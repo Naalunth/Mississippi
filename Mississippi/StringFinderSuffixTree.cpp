@@ -2,6 +2,7 @@
 #include <stack>
 #include <assert.h>
 #include <cmath>
+#include <unordered_set>
 
 
 
@@ -154,7 +155,14 @@ void SuffixTree::BuildTree()
 
 	for (i = 0; i < text->length(); i++)
 	{
-		if (!(i % (text->length() / 1000))) wprintf(L"At step %.*i (%3.0f%%)\n", (int) log10((float) text->length()) + 1, i, (float) i / (float) text->length()*100.f);
+		if (text->length() >= 1000)
+		{
+			if (!(i % (text->length() / 1000))) wprintf(L"At step %.*i (%3.0f%%)\n", (int) log10((float) text->length()) + 1, i, (float) i / (float) text->length()*100.f);
+		}
+		else
+		{
+			wprintf(L"At step %.*i (%3.0f%%)\n", (int) log10((float) text->length()) + 1, i, (float) i / (float) text->length()*100.f);
+		}
 		//if (!(i % (text->length() / 1000))) wprintf(L"At step %i\n", i);
 		remainder++;
 		for (currentLetter = i - remainder + 1; currentLetter <= i; currentLetter++)
@@ -257,7 +265,7 @@ returnFromChild:
 	leafNumberStack.push(leafCountReturn);
 
 	//add this node to the result if it suffices the parameters
-	if (leafCountReturn >= minAmount && labelAccumulator >= minLength)
+	if (leafCountReturn >= minAmount && labelAccumulator > minLength)
 		res[prefixAccumulator] = leafCountReturn;
 
 	labelAccumulator -= currentNode->EdgeLength(this);
@@ -294,6 +302,7 @@ StringFinderSuffixTree::StringFinderSuffixTree()
 
 StringFinderSuffixTree::~StringFinderSuffixTree()
 {
+	if(suffixTree_) delete suffixTree_;
 }
 
 
