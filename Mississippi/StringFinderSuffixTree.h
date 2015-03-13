@@ -2,25 +2,20 @@
 #include "StringFinder.h"
 
 
-
-static const int END_MARKER = INT_MAX;
-
 struct SuffixTree;
 
 typedef unsigned char uint8;
+
+struct SuffixTreeNodeInternal;
 
 //Suffix Tree Node
 struct SuffixTreeNode
 {
 public:
 	int begin = 0;
-	int end = 0;
-	uint8 isRoot : 1, didGoToSibling : 1;
-	SuffixTreeNode* child = 0;
+	uint8 isRoot : 1, isLeaf : 1, didGoToSibling : 1;
 	SuffixTreeNode* sibling = 0;
-	SuffixTreeNode* suffixlink = 0;
 
-	SuffixTreeNode();
 	~SuffixTreeNode();
 
 	int EdgeLength(SuffixTree*);
@@ -30,7 +25,30 @@ public:
 
 	SuffixTreeNode* GetChild(char label, SuffixTree* parentTree);
 
-	void Draw(int indent, SuffixTree*, int endpos = END_MARKER);
+	void Draw(int indent, SuffixTree*);
+
+	SuffixTreeNodeInternal* thisInternal();
+
+protected:
+	SuffixTreeNode();
+};
+
+
+struct SuffixTreeNodeInternal : public SuffixTreeNode
+{
+public:
+	int end = 0;
+	SuffixTreeNode* child = 0;
+	SuffixTreeNode* suffixlink = 0;
+	SuffixTreeNodeInternal();
+};
+
+
+struct SuffixTreeNodeLeaf : public SuffixTreeNode
+{
+public:
+	int labelOffset = 0;
+	SuffixTreeNodeLeaf();
 };
 
 
@@ -46,7 +64,7 @@ struct SuffixTree
 	void CalculateLimitations();
 
 	//Extracts all Substrings matching the specifications
-	map<string, int> GetAllSubStrings(int minLength, int minAmount);
+	map<PosLen, vector<int> > GetAllSubStrings(int minLength, int minAmount);
 
 private:
 	void BuildTree();
@@ -60,7 +78,7 @@ class StringFinderSuffixTree :
 public:
 	StringFinderSuffixTree();
 	~StringFinderSuffixTree();
-	map<string, int> GetAllSubStrings(int l = 1, int k = 2);
+	map<PosLen, vector<int> > GetAllSubStrings(int l = 1, int k = 2);
 protected:
 	void OnStringChange(string* in);
 private:

@@ -1,3 +1,4 @@
+/*
 #include "StringFinderBruteForce.h"
 #include <map>
 
@@ -55,3 +56,4 @@ map<string, int> StringFinderBruteForce::GetAllSubStrings(int l, int k)
 	}
 	return result;
 }
+*/
