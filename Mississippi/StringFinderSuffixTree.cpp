@@ -2,6 +2,7 @@
 #include <stack>
 #include <assert.h>
 #include <cmath>
+#include <algorithm>
 #include <vector>
 
 
@@ -186,11 +187,9 @@ void SuffixTree::BuildTree()
 		{
 			wprintf(L"At step %.*i (%3.0f%%)\n", (int) log10((float) text->length()) + 1, i, (float) i / (float) text->length()*100.f);
 		}
-		//if (!(i % (text->length() / 1000))) wprintf(L"At step %i\n", i);
 		remainder++;
 		for (currentLetter = i - remainder + 1; currentLetter <= i; currentLetter++)
 		{
-			//wprintf(L"\nStep:%i current letter:%i(%c)\n", i, currentLetter, text->at(currentLetter));
 			if (activePoint.length == 0)
 				activePoint.edge = text->at(i);
 			activeNodePointer = activePoint.node->GetChild(activePoint.edge, this);
@@ -223,7 +222,9 @@ void SuffixTree::BuildTree()
 				{
 					//Edge split
 					assert(activeNodePointer);
+					//The new node in the middle of the edge
 					SuffixTreeNodeInternal *newinternal = new SuffixTreeNodeInternal();
+					//The node containing our new suffix
 					SuffixTreeNodeLeaf *newchild = new SuffixTreeNodeLeaf();
 					newinternal->begin = activeNodePointer->begin;
 					newinternal->end = activeNodePointer->begin + activePoint.length - 1;
@@ -242,15 +243,81 @@ void SuffixTree::BuildTree()
 				ResetActivePoint();
 				remainder--;
 			}
-			//root->Draw(1, this, i);
 		}
 		lastInsertedNode = 0;
 		activeNodePointer = 0;
 	}
-	//root->Draw(1, this);
 	wprintf(L"Tree built.\n");
 	fflush(stdout);
 }
+
+
+
+
+string* textUsedInComparison;
+
+bool CompareStringsBackwards(const PosLen& a, const PosLen& b)
+{
+	//returns a < b
+	assert(textUsedInComparison);
+	if (a.pos == b.pos && a.len == b.len) return false;
+	int aPos = a.pos + a.len - 1;
+	int bPos = b.pos + b.len - 1;
+	if (aPos == bPos) return a.len < b.len;
+	for (;;)
+	{
+		if (aPos < a.pos) return true;
+		if (bPos < b.pos) return false;
+		if (textUsedInComparison->at(aPos) < textUsedInComparison->at(bPos)) return true;
+		if (textUsedInComparison->at(aPos) > textUsedInComparison->at(bPos)) return false;
+		aPos--;
+		bPos--;
+	}
+}
+
+void FilterMaximalResults(map<PosLen, vector<int> >& in, string* text)
+{
+	if (in.size() < 2) return;
+	vector<PosLen> substrings;
+	substrings.reserve(in.size());
+
+	wprintf(L"Sorting collected strings...\n");
+
+	for (auto it = in.begin(); it != in.end(); it++)
+		substrings.push_back(it->first);
+
+	textUsedInComparison = text;
+	sort(substrings.begin(), substrings.end(), CompareStringsBackwards);
+
+	wprintf(L"Filtering collected strings...\n");
+	for (int i = 0; i <= substrings.size() - 2; i++)
+	{
+		if (in[substrings[i]].size() == in[substrings[i + 1]].size())
+		{
+			int aPos = substrings[i].pos + substrings[i].len - 1;
+			int bPos = substrings[i + 1].pos + substrings[i + 1].len - 1;
+			if (aPos == bPos)
+			{
+				in.erase(substrings[i]);
+				continue;
+			}
+			for (;;)
+			{
+				if (aPos < substrings[i].pos)
+				{
+					in.erase(substrings[i]);
+					break;
+				}
+				if (bPos < substrings[i].pos) break;;
+				if (textUsedInComparison->at(aPos) != textUsedInComparison->at(bPos)) break;
+				aPos--;
+				bPos--;
+			}
+		}
+	}
+}
+
+
 
 
 map<PosLen, vector<int> > SuffixTree::GetAllSubStrings(int minLength, int minAmount)
@@ -291,8 +358,7 @@ returnFromChild:
 
 	//add this node to the result if it suffices the parameters
 	if (leafCountReturn.size() >= minAmount && labelAccumulator > minLength)
-		res[{leafCountReturn[0], labelAccumulator - 1}] = leafCountReturn
-		;
+		res[{leafCountReturn[0], labelAccumulator - 1}] = leafCountReturn;
 
 	labelAccumulator -= currentNode->EdgeLength(this);
 	currentNode->didGoToSibling = 1;
@@ -317,8 +383,12 @@ returnFromSibling:
 
 
 endTraversal:
+	FilterMaximalResults(res, text);
 	return res;
 }
+
+
+
 
 
 StringFinderSuffixTree::StringFinderSuffixTree()

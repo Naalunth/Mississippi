@@ -95,6 +95,11 @@ int ParseFasta(const wchar_t* filename, string** out, bool doFilter = false)
 
 void PrintFancy(const map<PosLen, vector<int> >& in, string* text)
 {
+	if (in.size() == 0)
+	{
+		wprintf(L"No substrings found.\n\n");
+		return;
+	}
 	if (in.size() <= 25)
 	{
 		wprintf(L"The numbers show the amount of substrings starting at that position in the text.\n\n");
@@ -122,70 +127,6 @@ void PrintFancy(const map<PosLen, vector<int> >& in, string* text)
 }
 
 
-string* textUsedInComparison;
-
-bool CompareStringsBackwards(const PosLen& a, const PosLen& b)
-{
-	//returns a < b
-	assert(textUsedInComparison);
-	if (a.pos == b.pos && a.len == b.len) return false;
-	int aPos = a.pos + a.len - 1;
-	int bPos = b.pos + b.len - 1;
-	if (aPos == bPos) return a.len < b.len;
-	for (;;)
-	{
-		if (aPos < a.pos) return true;
-		if (bPos < b.pos) return false;
-		if (textUsedInComparison->at(aPos) < textUsedInComparison->at(bPos)) return true;
-		if (textUsedInComparison->at(aPos) > textUsedInComparison->at(bPos)) return false;
-		aPos--;
-		bPos--;
-	}
-}
-
-
-void FilterMaximalResults(map<PosLen, vector<int> >& in, string* text)
-{
-	if (in.size() < 2) return;
-	vector<PosLen> substrings;
-	substrings.reserve(in.size());
-
-	wprintf(L"Sorting collected strings...\n");
-
-	for (auto it = in.begin(); it != in.end(); it++)
-		substrings.push_back(it->first);
-
-	textUsedInComparison = text;
-	sort(substrings.begin(), substrings.end(), CompareStringsBackwards);
-
-	wprintf(L"Filtering collected strings...\n");
-	for (int i = 0; i <= substrings.size() - 2; i++)
-	{
-		if (in[substrings[i]].size() == in[substrings[i + 1]].size())
-		{
-			int aPos = substrings[i].pos + substrings[i].len - 1;
-			int bPos = substrings[i + 1].pos + substrings[i + 1].len - 1;
-			if (aPos == bPos)
-			{
-				in.erase(substrings[i]);
-				continue;
-			}
-			for (;;)
-			{
-				if (aPos < substrings[i].pos)
-				{
-					in.erase(substrings[i]);
-					break;
-				}
-				if (bPos < substrings[i].pos) break;;
-				if (textUsedInComparison->at(aPos) != textUsedInComparison->at(bPos)) break;
-				aPos--;
-				bPos--;
-			}
-		}
-	}
-
-}
 
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
@@ -278,7 +219,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 				getline(wcin, inputbuffer);
 				k = stoi(inputbuffer);
 				tmpres = sf->GetAllSubStrings(l, k);
-				FilterMaximalResults(tmpres, textInput);
 				wprintf(L"\n");
 				PrintFancy(tmpres, textInput);
 				tmpres = map<PosLen, vector<int>>();
