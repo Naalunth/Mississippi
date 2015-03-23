@@ -1,11 +1,40 @@
 #pragma once
 #include <map>
 #include <string>
+#include <vector>
 using namespace std;
+
+
+struct PosLen
+{
+	int pos;
+	int len;
+
+	bool operator<(const PosLen& other) const{
+		return (pos == other.pos) ? (len < other.len) : (pos < other.pos);
+	}
+	PosLen operator-(const PosLen& other) const{
+		return PosLen{ pos - other.pos, len - other.len };
+	}
+};
+
 
 class StringFinder
 {
 public:
-	virtual map<string, int> GetAllSubStrings(string inputSequence, int minLength = 1, int minAmount = 2) = 0;
+	//Change the text associated with this StringFinder
+	void SetString(string* inputSequence)
+	{
+		text_ = inputSequence;
+		OnStringChange(inputSequence);
+	}
+
+
+	//Returns all Substrings matching the specifications
+	virtual map<PosLen, vector<int> > GetAllSubStrings(int minLength = 1, int minAmount = 2) = 0;
 	virtual ~StringFinder() {};
+
+protected:
+	virtual void OnStringChange(string* in) = 0;
+	string* text_;
 };
