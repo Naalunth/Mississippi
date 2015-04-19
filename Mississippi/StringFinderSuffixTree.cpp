@@ -114,16 +114,16 @@ SuffixTree::~SuffixTree()
 
 
 //Giant monolithic function for building a suffix tree
-// Based on "On-line construction of suffix trees" (E. Ukkonen, 1995)
+//Based on "On-line construction of suffix trees" (E. Ukkonen, 1995)
 void SuffixTree::BuildTree()
 {
 	wprintf(L"Starting tree build...\n");
 	struct ActivePoint
-	{ 
+	{
 		SuffixTreeNode* node;	//Node where the edge originates
 		char edge;	//First char of the label of the edge to point at
 		int length;	//Offset down the label of the edge
-	} 
+	}
 	activePoint;	//Pointer storing where to insert a new edge
 	int remainder = 0;	//Counts the remaining inserts to the tree
 	SuffixTreeNode* lastInsertedNode = 0;	//For building suffixs links
@@ -132,13 +132,12 @@ void SuffixTree::BuildTree()
 	root = new SuffixTreeNodeInternal();
 	root->isRoot = true;
 	activePoint = { root, 0, 0 };
-	activePoint.node = root;
 
 	int currentLetter;
 	int i;
 
+	//Walk down the tree in case the new point's label is too short
 	auto WalkDown = [&](){
-		//Walk down the tree in case the new point's label is too short
 		int ofs = 0;		//tracks the offset from the current letter
 		SuffixTreeNodeInternal* internalPointer;
 		for (;;)
@@ -157,6 +156,7 @@ void SuffixTree::BuildTree()
 		}
 	};
 
+	//This is called after every insertion
 	auto ResetActivePoint = [&](){
 		activePoint = (activePoint.node == root) ?
 			ActivePoint{ 
@@ -181,7 +181,8 @@ void SuffixTree::BuildTree()
 	{
 		if (text->length() >= 100)
 		{
-			if (!(i % (text->length() / 100))) wprintf(L"At step %.*i (%3.0f%%)\n", (int) log10((float) text->length()) + 1, i, (float) i / (float) text->length()*100.f);
+			if (!(i % (text->length() / 100)))
+				wprintf(L"At step %.*i (%3.0f%%)\n", (int) log10((float) text->length()) + 1, i, (float) i / (float) text->length()*100.f);
 		}
 		else
 		{
@@ -254,28 +255,8 @@ void SuffixTree::BuildTree()
 
 
 
-string* textUsedInComparison;
-
-bool CompareStringsBackwards(const PosLen& a, const PosLen& b)
-{
-	//returns a < b
-	assert(textUsedInComparison);
-	if (a.pos == b.pos && a.len == b.len) return false;
-	int aPos = a.pos + a.len - 1;
-	int bPos = b.pos + b.len - 1;
-	if (aPos == bPos) return a.len < b.len;
-	for (;;)
-	{
-		if (aPos < a.pos) return true;
-		if (bPos < b.pos) return false;
-		if (textUsedInComparison->at(aPos) < textUsedInComparison->at(bPos)) return true;
-		if (textUsedInComparison->at(aPos) > textUsedInComparison->at(bPos)) return false;
-		aPos--;
-		bPos--;
-	}
-}
-
-void FilterMaximalResults(map<PosLen, vector<int> >& in, string* text)
+//After this only maximal results will be left
+void FilterMaximalResults(map<PosLen, vector<int>>& in, string* text)
 {
 	if (in.size() < 2) return;
 	vector<PosLen> substrings;
@@ -286,7 +267,24 @@ void FilterMaximalResults(map<PosLen, vector<int> >& in, string* text)
 	for (auto it = in.begin(); it != in.end(); it++)
 		substrings.push_back(it->first);
 
-	textUsedInComparison = text;
+	auto CompareStringsBackwards = [=](const PosLen& a, const PosLen& b) -> bool
+	{
+		assert(textUsedInComparison);
+		if (a.pos == b.pos && a.len == b.len) return false;
+		int aPos = a.pos + a.len - 1;
+		int bPos = b.pos + b.len - 1;
+		if (aPos == bPos) return a.len < b.len;
+		for (;;)
+		{
+			if (aPos < a.pos) return true;
+			if (bPos < b.pos) return false;
+			if (text->at(aPos) < text->at(bPos)) return true;
+			if (text->at(aPos) > text->at(bPos)) return false;
+			aPos--;
+			bPos--;
+		}
+	};
+
 	sort(substrings.begin(), substrings.end(), CompareStringsBackwards);
 
 	wprintf(L"Filtering collected strings...\n");
@@ -309,7 +307,7 @@ void FilterMaximalResults(map<PosLen, vector<int> >& in, string* text)
 					break;
 				}
 				if (bPos < substrings[i].pos) break;;
-				if (textUsedInComparison->at(aPos) != textUsedInComparison->at(bPos)) break;
+				if (text->at(aPos) != text->at(bPos)) break;
 				aPos--;
 				bPos--;
 			}
@@ -320,7 +318,7 @@ void FilterMaximalResults(map<PosLen, vector<int> >& in, string* text)
 
 
 
-map<PosLen, vector<int> > SuffixTree::GetAllSubStrings(int minLength, int minAmount)
+map<PosLen, vector<int>> SuffixTree::GetAllSubStrings(int minLength, int minAmount)
 {
 	map<PosLen, vector<int> > res;
 	if (!root) return res;
@@ -335,7 +333,7 @@ map<PosLen, vector<int> > SuffixTree::GetAllSubStrings(int minLength, int minAmo
 	SuffixTreeNode* currentNode = traversalStack.top();
 
 
-	wprintf(L"Hopping through the tree collecting strings...\n");
+	wprintf(L"Bouncing through the tree collecting strings...\n");
 
 
 newNodeInsertion:

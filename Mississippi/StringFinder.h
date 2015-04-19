@@ -18,7 +18,7 @@ struct PosLen
 	}
 };
 
-
+//This class is just used to clearly define what needs to be done
 class StringFinder
 {
 public:
