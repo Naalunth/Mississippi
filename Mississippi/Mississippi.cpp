@@ -7,6 +7,7 @@
 #include <fcntl.h>
 #include <cctype>
 #include <cassert>
+#include <sstream>
 
 #include <list>
 #include <vector>
@@ -14,7 +15,6 @@
 #include <list>
 
 #include "StringFinder.h"
-#include "StringFinderBruteForce.h"
 #include "StringFinderSuffixTree.h"
 #include "Utility.h"
 
@@ -100,14 +100,18 @@ void PrintFancy(const map<PosLen, vector<int> >& in, string* text)
 		wprintf(L"No substrings found.\n\n");
 		return;
 	}
+	else
+	{
+		wprintf(L"Found %i substring%s.\n\n", in.size(), in.size() > 1 ? L"s" : L"");
+	}
 	if (in.size() <= 25)
 	{
 		wprintf(L"The numbers show the amount of substrings starting at that position in the text.\n\n");
-		for (auto it = in.begin(); it != in.end(); it++)
+		for (auto it : in)
 		{
-			wprintf(L"%hs (%i times)\n", text->substr(it->first.pos, it->first.len).data(), it->second.size());
+			wprintf(L"%hs (%i times)\n", text->substr(it.first.pos, it.first.len).data(), it.second.size());
 			map<int, int> tmppos;
-			for (auto it0 = it->second.begin(); it0 != it->second.end(); it0++)
+			for (auto it0 = it.second.begin(); it0 != it.second.end(); it0++)
 				tmppos[*it0 * 100 / text->size()]++;
 			string s(100, '_');
 			for (auto it0 = tmppos.begin(); it0 != tmppos.end(); it0++)
@@ -118,12 +122,36 @@ void PrintFancy(const map<PosLen, vector<int> >& in, string* text)
 	else
 	{
 		wprintf(L"              string | number of occurences\n---------------------+---------------------\n");
-		for (auto it = in.begin(); it != in.end(); it++)
+		for (auto it : in)
 		{
-			wprintf(L"%20hs | %3i\n", text->substr(it->first.pos, it->first.len).data(), it->second.size() == 999 ? 999 : it->second.size());
+			wprintf(L"%20hs | %3i\n", text->substr(it.first.pos, it.first.len).data(), it.second.size() == 999 ? 999 : it.second.size());
 		}
 	}
 	wprintf(L"\n");
+}
+
+
+void LogToFile(const map<PosLen, vector<int>>& in, string* text, const wchar_t* filename)
+{
+	ofstream file(filename, ios::out);
+	if (!file.is_open())
+	{
+		return;
+	}
+	file << "Number of strings: " << in.size() << "\n";
+	for (auto it : in)
+	{
+		file << "string: " << text->substr(it.first.pos, it.first.len) << "\n"
+			<< " l: " << it.first.len << "\n k: " << it.second.size() << "\n"
+			<< " positions: ";
+		for (auto pos : it.second)
+		{
+			file << pos << " ";
+		}
+		file << "\n";
+	}
+	file.close();
+	wprintf(L"Written into %s.\n\n", filename);
 }
 
 
@@ -133,9 +161,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 {
 	AllocConsole();
 	_setmode(_fileno(stdout), _O_U16TEXT);
-	freopen("CON", "w", stdout);
-	freopen("CON", "w", stderr);
-	freopen("CON", "r", stdin);
+	freopen("CONOUT$", "w", stdout);
+	freopen("CONOUT$", "w", stderr);
+	freopen("CONIN$", "r", stdin);
+
 
 
 
@@ -143,6 +172,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	wstring inputbuffer = L"";
 
 	string* textInput;
+	wstring filename;
 
 	wprintf(L"Repeated substring finder.\nby Kevin Schier\n(No warranty whatsoever for crashes on invalid inputs.)\n\n");
 
@@ -157,6 +187,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		case 1:
 			wprintf(L"Enter filename: ");
 			getline(wcin, inputbuffer);
+			filename = inputbuffer;
 			if (GetFileContentWithTerminal(inputbuffer.data(), &textInput))
 			{
 				wprintf(L"Could not load file %s\n\n", inputbuffer);
@@ -166,6 +197,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		case 2:
 			wprintf(L"Enter filename: ");
 			getline(wcin, inputbuffer);
+			filename = inputbuffer;
 			if (ParseFasta(inputbuffer.data(), &textInput))
 			{
 				wprintf(L"Could not load file %s\n\n", inputbuffer);
@@ -175,6 +207,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		case 3:
 			wprintf(L"Enter filename: ");
 			getline(wcin, inputbuffer);
+			filename = inputbuffer;
 			if (ParseFasta(inputbuffer.data(), &textInput, true))
 			{
 				wprintf(L"Could not load file %s\n\n", inputbuffer);
@@ -187,6 +220,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			textInput = new string;
 			textInput->assign(Util::wstrtostr(inputbuffer));
 			textInput->append("$");
+			filename = L"";
 			break;
 		case 9:
 			goto end_session;
@@ -221,6 +255,14 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 				tmpres = sf->GetAllSubStrings(l, k);
 				wprintf(L"\n");
 				PrintFancy(tmpres, textInput);
+				if (!filename.empty())
+				{
+					LogToFile(tmpres, textInput,
+						(filename +
+						wstring(L"-results-l=") + to_wstring(l) +
+						wstring(L"-k=") + to_wstring(k) +
+						wstring(L".txt")).data());
+				}
 				tmpres = map<PosLen, vector<int>>();
 				break;
 			case 2:

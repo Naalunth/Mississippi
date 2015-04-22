@@ -140,12 +140,10 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Mississippi.cpp" />
-    <ClCompile Include="StringFinderBruteForce.cpp" />
     <ClCompile Include="StringFinderSuffixTree.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="StringFinder.h" />
-    <ClInclude Include="StringFinderBruteForce.h" />
     <ClInclude Include="StringFinderSuffixTree.h" />
     <ClInclude Include="Utility.h" />
   </ItemGroup>

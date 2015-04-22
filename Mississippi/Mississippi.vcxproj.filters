@@ -18,18 +18,12 @@
     <ClCompile Include="Mississippi.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
-    <ClCompile Include="StringFinderBruteForce.cpp">
-      <Filter>Quelldateien</Filter>
-    </ClCompile>
     <ClCompile Include="StringFinderSuffixTree.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="StringFinder.h">
-      <Filter>Headerdateien</Filter>
-    </ClInclude>
-    <ClInclude Include="StringFinderBruteForce.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
     <ClInclude Include="StringFinderSuffixTree.h">

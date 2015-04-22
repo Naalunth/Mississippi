@@ -12,8 +12,10 @@ struct SuffixTreeNodeInternal;
 struct SuffixTreeNode
 {
 public:
-	int begin = 0;
-	uint8 isRoot : 1, isLeaf : 1, didGoToSibling : 1;
+	int begin = 0;	//Where in the string the label of the node begins
+	uint8 isRoot : 1,
+		isLeaf : 1,
+		didGoToSibling : 1; //Used in the substring collection
 	SuffixTreeNode* sibling = 0;
 
 	~SuffixTreeNode();
@@ -37,9 +39,10 @@ protected:
 struct SuffixTreeNodeInternal : public SuffixTreeNode
 {
 public:
-	int end = 0;
+	int end = 0; //Where in the string the label of the node ends
 	SuffixTreeNode* child = 0;
-	SuffixTreeNode* suffixlink = 0;
+	SuffixTreeNode* suffixlink = 0; //suffix link used in tree construction
+
 	SuffixTreeNodeInternal();
 };
 
@@ -47,7 +50,8 @@ public:
 struct SuffixTreeNodeLeaf : public SuffixTreeNode
 {
 public:
-	int labelOffset = 0;
+	int labelOffset = 0; //Where the suffix from root to this leaf begins in the string
+
 	SuffixTreeNodeLeaf();
 };
 
@@ -59,9 +63,6 @@ struct SuffixTree
 
 	SuffixTree(std::string*);
 	~SuffixTree();
-
-	//Calculates labellength and leafnumber for every node
-	void CalculateLimitations();
 
 	//Extracts all Substrings matching the specifications
 	map<PosLen, vector<int> > GetAllSubStrings(int minLength, int minAmount);
